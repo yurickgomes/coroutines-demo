@@ -1,5 +1,5 @@
 package com.example.coroutinesdemo.accounts
 
-data class CardDto(
+data class CardResponseDto(
     val id: String
 )

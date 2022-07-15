@@ -9,11 +9,11 @@ import retrofit2.converter.jackson.JacksonConverterFactory
 @Configuration
 class RetrofitConfiguration {
     @Bean
-    fun cardsClient(): CardsClient = Retrofit
+    fun cardsClient(): CardClient = Retrofit
         .Builder()
         .baseUrl("http://localhost:8082")
         .addConverterFactory(
             JacksonConverterFactory.create(jacksonObjectMapper())
         ).build()
-        .create(CardsClient::class.java)
+        .create(CardClient::class.java)
 }
