@@ -1,8 +1,8 @@
 package com.example.coroutinesdemo.accounts
 
 
-data class AccountResponseDto(
+data class AccountDto(
     val id: String,
     val name: String,
-    val cards: List<CardResponseDto>? = null
+    val cards: List<CardDto>? = null
 )

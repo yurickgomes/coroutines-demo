@@ -3,6 +3,7 @@ package com.example.coroutinesdemo.cards
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -17,14 +18,14 @@ class CardsController(
     }
 
     @GetMapping("/{id}")
-    suspend fun findById(@PathVariable("id") id: String): CardResponseDto? {
+    suspend fun findById(@PathVariable("id") id: String): CardDto? {
         val card = cardsService.findById(id) ?: return null
 
-        return CardResponseDto(card)
+        return CardDto(card)
     }
 
-    @PostMapping("/{id}")
-    suspend fun addNewCard(@PathVariable("id") id: String): CardResponseDto {
-        return CardResponseDto(cardsService.save(id))
+    @PostMapping
+    suspend fun addNewCard(@RequestBody cardDto: CardDto): CardDto {
+        return CardDto(cardsService.save(cardDto.id))
     }
 }
