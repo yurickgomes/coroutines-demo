@@ -38,6 +38,6 @@ class AccountController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     suspend fun createAccount(@RequestBody account: AccountDto) {
-        accountClient.createAccountParallelFireAndForget(account)
+        accountClient.createAccountInBackground(account)
     }
 }

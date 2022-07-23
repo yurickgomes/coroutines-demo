@@ -66,8 +66,9 @@ class AccountService(
         return accountDto.copy()
     }
 
-    suspend fun createAccountParallelFireAndForget(accountDto: AccountDto) {
+    suspend fun createAccountInBackground(accountDto: AccountDto) {
         accountsMap[accountDto.id] = accountDto.toAccountModel()
+//        You must be careful when using GlobalScope, the documentation says:
 //        A global CoroutineScope not bound to any job. Global scope is used to launch top-level coroutines which are
 //        operating on the whole application lifetime and are not cancelled prematurely.
 //        Active coroutines launched in GlobalScope do not keep the process alive. They are like daemon threads.
@@ -75,7 +76,6 @@ class AccountService(
 //        A coroutine launched in GlobalScope is not subject to the principle of structured concurrency, so if it
 //        hangs or gets delayed due to a problem (e.g. due to a slow network),
 //        it will stay working and consuming resources.
-//        We can do better!!
         GlobalScope.launch {
             accountDto.cards?.map { card -> launch { cardClient.addNewCard(card) } }
         }
