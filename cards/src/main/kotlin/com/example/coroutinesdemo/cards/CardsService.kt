@@ -25,8 +25,8 @@ class CardsService {
     }
 
     suspend fun save(id: String): String {
-        delay(500)
         cardsMap[id] = id
+        delay(1000)
         return id
     }
 }

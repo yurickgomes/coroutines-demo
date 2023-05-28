@@ -30,14 +30,14 @@ class AccountController(
         return accountClient.findByIdWithParallelCardDetails(id)
     }
 
-    @PutMapping("/{id}")
-    suspend fun updateAccount(@PathVariable("id") id: String, @RequestBody account: AccountDto): AccountDto {
-        return accountClient.updateAccountParallelWithConfirmation(id, account)
-    }
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    suspend fun createAccount(@RequestBody account: AccountDto) {
+    suspend fun createAccountInBackground(@RequestBody account: AccountDto) {
         accountClient.createAccountInBackground(account)
+    }
+
+    @PutMapping("/{id}")
+    suspend fun updateAccount(@PathVariable("id") id: String, @RequestBody account: AccountDto): AccountDto {
+        return accountClient.updateAccountInParallelWithConfirmation(id, account)
     }
 }
