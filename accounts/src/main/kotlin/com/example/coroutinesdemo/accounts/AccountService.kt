@@ -73,10 +73,6 @@ class AccountService(
             accountsMap[accountDto.id] = accountDto.toAccountModel()
             accountDto.cards?.forEach { card -> launch { cardClient.addNewCard(card) } }
         }
-//        withContext(Dispatchers.IO) {
-//            accountsMap[accountDto.id] = accountDto.toAccountModel()
-//            accountDto.cards?.forEach { card -> launch { cardClient.addNewCard(card) } }
-//        }
     }
 }
 
