@@ -69,6 +69,7 @@ class AccountService(
 
     @OptIn(DelicateCoroutinesApi::class)
     suspend fun createAccountInBackground(accountDto: AccountDto) {
+        // not recommended, see https://elizarov.medium.com/the-reason-to-avoid-globalscope-835337445abc
         GlobalScope.launch {
             accountsMap[accountDto.id] = accountDto.toAccountModel()
             accountDto.cards?.forEach { card -> launch { cardClient.addNewCard(card) } }
