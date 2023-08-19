@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("org.springframework.boot") version "2.7.11"
     id("io.spring.dependency-management") version "1.0.15.RELEASE"
-    kotlin("jvm") version "1.8.20"
-    kotlin("plugin.spring") version "1.8.20"
+    kotlin("jvm") version "1.8.22"
+    kotlin("plugin.spring") version "1.8.22"
 }
 
 group = "com.example"
@@ -15,7 +15,7 @@ repositories {
     mavenCentral()
 }
 
-val coroutinesVersion by extra { "1.6.4" }
+val coroutinesVersion by extra { "1.7.3" }
 val retrofitVersion by extra { "2.9.0" }
 
 dependencies {

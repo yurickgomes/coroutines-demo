@@ -33,11 +33,12 @@ class AccountController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     suspend fun createAccountInBackground(@RequestBody account: AccountDto) {
-        accountClient.createAccountInBackground(account)
+//        accountClient.createAccountInBackgroundUsingGlobalScope(account)
+        accountClient.createAccountUsingWorker(account)
     }
 
     @PutMapping("/{id}")
     suspend fun updateAccount(@PathVariable("id") id: String, @RequestBody account: AccountDto): AccountDto {
-        return accountClient.updateAccountInParallelWithConfirmation(id, account)
+        return accountClient.updateAccountInParallel(id, account)
     }
 }

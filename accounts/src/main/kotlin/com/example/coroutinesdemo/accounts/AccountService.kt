@@ -5,74 +5,98 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Service
 class AccountService(
     private val cardClient: CardClient
 ) {
     private val accountsMap = HashMap<String, AccountModel>()
+    private val worker = ThreadPoolExecutor(
+        1,
+        4,
+        60,
+        TimeUnit.SECONDS,
+        LinkedBlockingQueue()
+    )
 
     init {
+        worker.allowCoreThreadTimeOut(true)
         val account = AccountModel("account1", "Bruce Wayne", listOf("card_1", "card_2"))
         accountsMap[account.id] = account
     }
 
     suspend fun findAll(): List<AccountModel> {
-        delay(400)
         return accountsMap.map { it.value }.toList()
     }
 
     suspend fun findByIdWithSerialCardDetails(id: String): AccountDto? {
-        delay(100)
         val account = accountsMap[id] ?: return null
-        val cards = withContext(Dispatchers.IO) {
-            account.cards?.map { card -> cardClient.findByCardId(card)!! }
+        // Let's offload blocking I/O operation to the elastic Dispatchers.IO
+        // https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html
+        return withContext(Dispatchers.IO) {
+            Thread.sleep(200L) // Blocking operation
+            // coroutines run sequentially by default
+            val cards = account.cards?.map { card ->
+                cardClient.findByCardId(card)!!
+            }
+
+            AccountDto(
+                id = account.id,
+                name = account.name,
+                cards = cards
+            )
         }
 
-        return AccountDto(
+    }
+
+    suspend fun findByIdWithParallelCardDetails(id: String): AccountDto? = coroutineScope {
+        val account = accountsMap[id] ?: return@coroutineScope null
+        // request cards details in parallel
+        val cardsDeferred = account.cards?.map { card -> async { cardClient.findByCardId(card)!! } }
+        val cards = cardsDeferred?.awaitAll()
+
+        return@coroutineScope AccountDto(
             id = account.id,
             name = account.name,
             cards = cards
         )
     }
 
-    suspend fun findByIdWithParallelCardDetails(id: String): AccountDto? {
-        val account = accountsMap[id] ?: return null
-        delay(100)
-        val cards = withContext(Dispatchers.IO) {
-            val cardsDeferredList = account.cards?.map { card -> async { cardClient.findByCardId(card)!! } }
-            cardsDeferredList?.awaitAll()
+    suspend fun updateAccountInParallel(id: String, accountDto: AccountDto): AccountDto =
+        coroutineScope {
+            accountsMap[id] ?: throw RuntimeException("Account not found")
+            // we don't really care for the result of cardClient.addNewCard, so let's use launch
+            accountDto.cards?.forEach { card -> launch { cardClient.addNewCard(card) } }
+            accountsMap[id] = accountDto.toAccountModel()
+
+            return@coroutineScope accountDto.copy()
         }
-
-        return AccountDto(
-            id = account.id,
-            name = account.name,
-            cards = cards
-        )
-    }
-
-    suspend fun updateAccountInParallelWithConfirmation(id: String, accountDto: AccountDto): AccountDto {
-        accountsMap[id] ?: throw RuntimeException("Account not found")
-        delay(300)
-        withContext(Dispatchers.IO) {
-            val newCardsDeferredList = accountDto.cards?.map { card -> async { cardClient.addNewCard(card) } }
-            newCardsDeferredList?.awaitAll()
-        }
-        accountsMap[id] = accountDto.toAccountModel()
-
-        return accountDto.copy()
-    }
 
     @OptIn(DelicateCoroutinesApi::class)
-    suspend fun createAccountInBackground(accountDto: AccountDto) {
+    suspend fun createAccountInBackgroundUsingGlobalScope(accountDto: AccountDto) {
         // not recommended, see https://elizarov.medium.com/the-reason-to-avoid-globalscope-835337445abc
         GlobalScope.launch {
             accountsMap[accountDto.id] = accountDto.toAccountModel()
             accountDto.cards?.forEach { card -> launch { cardClient.addNewCard(card) } }
+        }
+    }
+
+    fun createAccountUsingWorker(accountDto: AccountDto) {
+        accountsMap[accountDto.id] = accountDto.toAccountModel()
+        accountDto.cards?.forEach { card ->
+            worker.submit { // not really using the coroutines way, just a possible replacement for GlobalScope usage
+                runBlocking {
+                    cardClient.addNewCard(card)
+                }
+            }
         }
     }
 }
